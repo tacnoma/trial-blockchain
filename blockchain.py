@@ -2,7 +2,10 @@
 
 import hashlib
 import json
+from textwrap import dedent
 from time import time
+from uuid import uuid4
+from flask import Flask, jsonify, request
 
 class Blockchain(object):
   def __init__(self):
@@ -91,7 +94,40 @@ class Blockchain(object):
     :return: <bool> 正しければ true,　そうでなければ false
     """
 
-    guess = f'{last_proof}{proof}'.encode()
+    guess = f"{last_proof}{proof}".encode()
     guess_hash = hashlib.sha256(guess).hexdigest()
 
     return guess_hash[:4] == "0000"
+
+# ノードを作る
+# Flaskについて詳しくはこちらを読んでほしい http://flask.pocoo.org/docs/0.12/quickstart/#a-minimal-application
+app = Flask(__name__)
+
+# このノードのグローバルにユニークなアドレスを作る
+node_identifire = str(uuid4()).replace('-', '')
+
+# ブロックチェーンクラスをインスタンス化する
+blockchain = Blockchain()
+
+# メソッドはPOSTで/transactions/newエンドポイントを作る。メソッドはPOSTなのでデータを送信する
+@app.route('/transactions/new', methods=['POST'])
+def new_transactions():
+    return '新しいトランザクションを追加します'
+
+# メソッドはGETで/mineエンドポイントを作る
+@app.route('/mine', methods=['GET'])
+def mine():
+    return '新しいブロックを採掘します'
+
+# メソッドはGETで、フルのブロックチェーンをリターンする/chainエンドポイントを作る
+@app.route('/chain', methods=['GET'])
+def full_chain():
+    response = {
+        'chain': blockchain.chain,
+        'length': len(blockchain.chain),
+    }
+    return jsonify(response), 200
+
+# port5000でサーバーを起動する
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
