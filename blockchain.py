@@ -1,13 +1,37 @@
-# coding: UTR-8
+# coding: UTF-8
+
+import hashlib
+import json
+from time import time
 
 class Blockchain(object):
   def __init__(self):
     self.chain = []
     self.current_transactions = []
 
-  def new_block(self):
-    # 新しいブロックを作り、チェーンに加える
-    pass
+    # ジェネシスブロックを作る
+    self.new_block(previous_hash=1, proof=100)
+
+  def new_block(self, proof, previous_hash=None):
+    """
+    ブロックチェーンに新しいブロックを作る
+    :param proof: <int> プルーフ・オブ・わーくあるごりずむから得られるプルーフ
+    :param previous_hash: (オプション） <str> 前のブロックのハッシュ
+    :return: <dict> 新しいブロック
+    """
+
+    block = {
+        'index': len(self.chain) + 1,
+        'timestamp': time(),
+        'transactions': self.current_transactions,
+        'proof': proof,
+        'previous_hash': previous_hash or self.hash(self.chain[-1]),
+        }
+
+    # 現在のトランザクションリストをリセット
+    self.current_transactions = []
+    self.chain.append(block)
+    return block
 
   def new_transaction(self, sender, recipient, amount):
     """
@@ -26,13 +50,20 @@ class Blockchain(object):
 
     return self.last_block['index'] + 1
 
-  @staticmethod
-  def hash(block):
-    # ブロックをハッシュ化する
-    pass
-
   @property
   def last_block(self):
     # チェーンの最後のブロックをリターンする
-    pass
+    return self.chain[-1]
 
+  @staticmethod
+  def hash(block):
+    """
+    ブロックのSHA-256 ハッシュを作る
+    :param block: <dict> ブロック
+    :return: <str>
+    """
+
+    # 必ずディクショナリ（辞書型のオブジェクト）がソートされている必要がある。
+    # そうでないと一貫性のないハッシュとなってしまう
+    block_string = json.dumps(block, sort_keys=True).encode()
+    return hashlib.sha256(block_string).hexdigest()
