@@ -94,7 +94,7 @@ class Blockchain(object):
     :return: <bool> 正しければ true,　そうでなければ false
     """
 
-    guess = f"{last_proof}{proof}".encode()
+    guess = f'{last_proof}{proof}'.encode()
     guess_hash = hashlib.sha256(guess).hexdigest()
 
     return guess_hash[:4] == "0000"
@@ -111,8 +111,19 @@ blockchain = Blockchain()
 
 # メソッドはPOSTで/transactions/newエンドポイントを作る。メソッドはPOSTなのでデータを送信する
 @app.route('/transactions/new', methods=['POST'])
-def new_transactions():
-    return '新しいトランザクションを追加します'
+def new_transaction():
+    values = request.get_json()
+
+    # POSTされたデータに必要なデータがあるかを確認
+    required = ['sender', 'recipient', 'amount']
+    if not all(k in values for k in required):
+        return 'Missing values', 400
+
+    # 新しいトランザクションを作る
+    index = blockchain.new_transaction(values['sender'], values['recipient'], values['amount'])
+
+    response = {'message': f'トランザクションはブロック {index} に追加されました'}
+    return jsonify(response), 201
 
 # メソッドはGETで/mineエンドポイントを作る
 @app.route('/mine', methods=['GET'])
