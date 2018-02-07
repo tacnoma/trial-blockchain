@@ -46,7 +46,7 @@ class Blockchain(object):
     """
 
     proof = 0
-    while self.valid_proof(last_proof, proof) is Flase:
+    while self.valid_proof(last_proof, proof) is False:
       proof += 1
 
     return proof
@@ -86,6 +86,7 @@ class Blockchain(object):
     block_string = json.dumps(block, sort_keys=True).encode()
     return hashlib.sha256(block_string).hexdigest()
 
+  @staticmethod
   def valid_proof(last_proof, proof):
     """
     プルーフが正しいかを確認する：　hash(last_proof, proof)の最初の4つが0となっているか？
@@ -112,56 +113,56 @@ blockchain = Blockchain()
 # メソッドはPOSTで/transactions/newエンドポイントを作る。メソッドはPOSTなのでデータを送信する
 @app.route('/transactions/new', methods=['POST'])
 def new_transaction():
-    values = request.get_json()
+  values = request.get_json()
 
-    # POSTされたデータに必要なデータがあるかを確認
-    required = ['sender', 'recipient', 'amount']
-    if not all(k in values for k in required):
-        return 'Missing values', 400
+  # POSTされたデータに必要なデータがあるかを確認
+  required = ['sender', 'recipient', 'amount']
+  if not all(k in values for k in required):
+    return 'Missing values', 400
 
-    # 新しいトランザクションを作る
-    index = blockchain.new_transaction(values['sender'], values['recipient'], values['amount'])
+  # 新しいトランザクションを作る
+  index = blockchain.new_transaction(values['sender'], values['recipient'], values['amount'])
 
-    response = {'message': f'トランザクションはブロック {index} に追加されました'}
-    return jsonify(response), 201
+  response = {'message': f'トランザクションはブロック {index} に追加されました'}
+  return jsonify(response), 201
 
 # メソッドはGETで/mineエンドポイントを作る
 @app.route('/mine', methods=['GET'])
 def mine():
-    # 次のプルーフを見つけるためプルーフ・オブ・ワークアルゴリズムを使用する
-    last_block = blockchain.last_block
-    last_proof = last_block['proof']
-    proof = blockchain.proof_of_work(last_proof)
+  # 次のプルーフを見つけるためプルーフ・オブ・ワークアルゴリズムを使用する
+  last_block = blockchain.last_block
+  last_proof = last_block['proof']
+  proof = blockchain.proof_of_work(last_proof)
 
-    # プルーフを見つけたことに対する報酬を得る
-    # 送信者は、採掘者が新しいコインを採掘したことを表すために"0"とする
-    blockchain.new_transaction(
-        sender="0",
-        recipient=node_identifire,
-        amout=1,
-        )
+  # プルーフを見つけたことに対する報酬を得る
+  # 送信者は、採掘者が新しいコインを採掘したことを表すために"0"とする
+  blockchain.new_transaction(
+    sender="0",
+    recipient=node_identifire,
+    amount=1,
+  )
 
-    # チェーンに新しいブロックを加えることで、新しいブロックを採掘する
-    block = blockchain.new_block(proof)
+  # チェーンに新しいブロックを加えることで、新しいブロックを採掘する
+  block = blockchain.new_block(proof)
 
-    response = {
-        'message': '新しいブロックを採掘しました',
-        'index': block['index'],
-        'transactions': block['transactions'],
-        'proof': block['proof'],
-        'previous_hash': block['previous_hash'],
-        }
-    return jsonify(response), 200
+  response = {
+    'message': '新しいブロックを採掘しました',
+    'index': block['index'],
+    'transactions': block['transactions'],
+    'proof': block['proof'],
+    'previous_hash': block['previous_hash'],
+    }
+  return jsonify(response), 200
 
 # メソッドはGETで、フルのブロックチェーンをリターンする/chainエンドポイントを作る
 @app.route('/chain', methods=['GET'])
 def full_chain():
-    response = {
-        'chain': blockchain.chain,
-        'length': len(blockchain.chain),
-    }
-    return jsonify(response), 200
+  response = {
+      'chain': blockchain.chain,
+      'length': len(blockchain.chain),
+  }
+  return jsonify(response), 200
 
 # port5000でサーバーを起動する
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+  app.run(host='0.0.0.0', port=5000)
