@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import requests
 from textwrap import dedent
 from time import time
 from uuid import uuid4
@@ -68,7 +69,7 @@ class Blockchain(object):
 
     # 他のすべてのノードのチェーンを確認
     for node in neighbours:
-      response = reuqests.get(f'http://{node}/chain')
+      response = requests.get(f'http://{node}/chain')
 
       if response.status_code == 200:
         length = response.json()['length']
@@ -231,6 +232,39 @@ def full_chain():
       'chain': blockchain.chain,
       'length': len(blockchain.chain),
   }
+  return jsonify(response), 200
+
+@app.route('/nodes/register', methods=['POST'])
+def register_node():
+  values = request.get_json()
+
+  nodes = values.get('nodes')
+  if nodes is None:
+    return "Error: 有効ではないのー度のリストです", 400
+
+  for node in nodes:
+    blockchain.register_node(node)
+
+  response = {
+      'message': '新しいノードが追加されました',
+      'total_nodes': list(blockchain.nodes),
+      }
+  return jsonify(response), 201
+
+@app.route('/nodes/resolve', methods=['GET'])
+def consensus():
+  replaced = blockchain.resolve_conflicts()
+
+  if replaced:
+    response = {
+        'message': 'チェーンが置き換えられました',
+        'chain': blockchain.chain
+        }
+  else:
+    response = {
+        'message': 'チェーンが確認されました',
+        'chain': blockchain.chain
+        }
   return jsonify(response), 200
 
 # port5000でサーバーを起動する
